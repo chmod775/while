@@ -1,0 +1,32 @@
+- Optional argument: "bool en" -> Function always execute, en value is the value of the rung
+- Optional argument: "s_xxxx *inst" -> Function will be executed as a 'Class'. NB: xxxx must be the same name of the function
+- Optional argument: "bool *eno" -> Output of the funzion rung state if function return a different datatype of bool
+
+bool ADD_INT_simple(int a, int b, int *c) {
+  *c = a + b;
+  return true;
+}
+
+bool ADD_INT(bool en, int a, int b, int *c) {
+  if (!en) return false;
+  *c = a + b;
+  return true;
+}
+
+
+bool t21 = ADD_INT(t20, 1, 2, &c);
+bool t21 = t20 ? ADD_INT_simple(1, 2, &c) : false;
+
+
+
+bool t1 = NO(true, true);
+
+bool t10 = NO(t1, btn);
+bool t11 = PWM_Write(t10, 120);
+
+bool t20 = NC(t1, btn);
+bool t21 = PWM_Write(t20, 0);
+
+bool t30 = t11 || t21;
+bool t31 = COIL(t30, &test);
+

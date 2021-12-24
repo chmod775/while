@@ -1,0 +1,5 @@
+NO[a] - (NO[b], NO[c]) - COIL[o]
+NO[en] - ADD_INT[a, b, y] - ADD_INT[y, y, 1]
+(NO[start] - TON[3], COIL[motor]) - NC[stop] - COIL[motor]
+NO[true] - (NO[btn] - PWM_Write[120], NC[btn] - PWM_Write[0]) - COIL[test]
+NO[btn] - rtrig_count[] - ADD[a, 1, a]
