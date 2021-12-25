@@ -28,6 +28,14 @@ bool SET(bool* dest) { *dest = true; return true; }
 bool RESET(bool *dest) { *dest = false; return true; }
 
 
+bool TON(bool en, s_TON *inst, int delay) {
+  return true;
+}
+
+bool PWM_Write(int value) {
+  return true;
+}
+
 bool ADD_INT(int a, int b, int *c) {
   *c = a + b;
   return true;

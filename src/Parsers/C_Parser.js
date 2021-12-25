@@ -1,7 +1,45 @@
+class C_Function {
+  constructor() {
+    this.name = null;
+    this.retType = null;
+    this.arguments = null;
+    this.block = null;
+  }
+
+  hasOptionalEnable() {
+    let firstArgument = this.arguments[0];
+    if (!firstArgument) return false;
+
+    return (firstArgument.name == 'en') && (firstArgument.dataType == 'bool');
+  }
+
+  hasOptionalStatic() {
+    let firstArgument = this.hasOptionalEnable() ? this.arguments[1] : this.arguments[0];
+    if (!firstArgument) return false;
+
+    return (firstArgument.name == 'inst') && (firstArgument.modifiers = ['POINTER']);
+  }
+
+  hasOptionaENO() {
+
+  }
+
+  getUserArguments() {
+    let startIdx = 0;
+    if (this.hasOptionalEnable()) startIdx = 1;
+    if (this.hasOptionalStatic()) startIdx++;
+
+    return this.arguments.slice(startIdx);
+  }
+}
+
+
 class C_Parser {
   constructor(code) {
     this.code = code;
     this.codePtr = 0;
+
+    this.token = null;
 
     this.tokens = [];
 
@@ -21,6 +59,17 @@ class C_Parser {
     return this.code[this.codePtr++];
   }
   
+  retToken(type, content) {
+    this.token = { type: type, content: content };
+    return this.token;
+  }
+
+  expectToken(type) {
+    let tok = this.getToken();
+    if (tok.type != type) throw `Token ${tok.type} not expected, expected ${type}!`;
+    return tok;
+  }
+
   getToken() {
     let ch = '';
   
@@ -38,9 +87,9 @@ class C_Parser {
         this.codePtr--;
   
         var cleanSymbol = symbol.trim().toLowerCase();
-        if (this.keywords.includes(cleanSymbol)) return { type: 'KEYWORD', content: cleanSymbol };
+        if (this.keywords.includes(cleanSymbol)) return this.retToken('KEYWORD', cleanSymbol);
   
-        return { type: "SYMBOL", content: symbol };
+        return this.retToken("SYMBOL", symbol);
       } else if (ch == '{') {
         let group = '';
         let level = 0;
@@ -51,31 +100,22 @@ class C_Parser {
           if (ch == '}') level--;
           ch = this.getNextCh();
         } while (level > 0);
-        return { type: "GROUP", content: group };
+        return this.retToken("GROUP", group);
   
       } else if (ch == '(') {
-        let arg = '';
         let args = [];
-        let level = 0;
   
-        do {
-          if (ch == '(')
-            level++;
-          else if (ch == ')')
-            level--;
-          else if (ch == ',') {
-            args.push(arg.trim());
-            arg = '';
-          } else {
-            arg += ch;
-          }
-  
-          ch = this.getNextCh();
-        } while (level > 0);
-  
-        args.push(arg.trim());
-  
-        return { type: "ARGUMENTS", content: args };
+        while (1) {
+          let t = this.getToken();
+          if (t.type == ',') continue;
+          if (t.type == ')') break;
+          
+          args.push(this.parseArgument());
+        }
+
+        return this.retToken("ARGUMENTS", args);
+      } else if ((ch == '*') || (ch == ')') || (ch == ',')) {
+        return this.retToken(ch);
       } else if (ch == '\/') { // Comments
         if (nch == '\/') {
           do {
@@ -91,11 +131,27 @@ class C_Parser {
     }
   }
   
-  parseArgument(argument) {
-    
+  parseArgument() {
+    let arg = {
+      name: null,
+      dataType: this.token.content,
+      modifiers: []
+    };
+
+    let tok = this.getToken();
+
+    while (tok.type == '*') {
+      arg.modifiers.push('POINTER');
+      tok = this.getToken();
+    }
+
+    if (tok.type != "SYMBOL") throw `Token ${tok.type} not expected, expected SYMBOL!`;
+    arg.name = tok.content;
+
+    return arg;
   }
   
-  findFunction() {
+  findFunctions() {
     var foundFunctions = [];
   
     for (var idx in this.tokens) {
@@ -111,12 +167,14 @@ class C_Parser {
           (functionArguments_token.type == 'ARGUMENTS') &&
           (functionBlock_token.type == 'GROUP')
         ) {
-          foundFunctions.push({
-            name: functionName_token,
-            retType: functionRetType_token,
-            arguments: functionArguments_token,
-            block: functionBlock_token
-          })
+          let newFunction = new C_Function();
+
+          newFunction.name = functionName_token.content;
+          newFunction.retType = functionRetType_token.content;
+          newFunction.arguments = functionArguments_token.content;
+          newFunction.block = functionBlock_token.content;
+
+          foundFunctions.push(newFunction);
         }
       }
     }
