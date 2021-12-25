@@ -1,29 +1,11 @@
-#define test 1
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
-// hello comment
-/*
-
-
-hello biiiiiiiiiiig
-
-comment
- 
-
-  
-   
-    
-     
-
-
-
-
-                */
-              
-
-test abc() {}
 bool NO(bool src) { return src; }
 bool NC(bool src) { return !src; }
-bool COIL(bool en, bool * dest) { *dest = en; }
+bool COIL(bool en, bool * dest) { *dest = en; return en; }
 bool SET(bool* dest) { *dest = true; return true; }
 bool RESET(bool *dest) { *dest = false; return true; }
 
@@ -36,6 +18,10 @@ bool WriteOutput(bool en, int pin) {
   digitalWrite(pin, en);
   return true;
 }
+
+typedef struct {
+
+} s_TON;
 
 bool TON(bool en, s_TON *inst, int delay) {
   return true;
