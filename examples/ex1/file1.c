@@ -28,6 +28,15 @@ bool SET(bool* dest) { *dest = true; return true; }
 bool RESET(bool *dest) { *dest = false; return true; }
 
 
+bool ReadInput(int pin) {
+  return digitalRead(pin);
+}
+
+bool WriteOutput(bool en, int pin) {
+  digitalWrite(pin, en);
+  return true;
+}
+
 bool TON(bool en, s_TON *inst, int delay) {
   return true;
 }
