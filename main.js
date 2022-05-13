@@ -2,11 +2,11 @@ let fs = require('fs');
 var path = require('path');
 const SVG_Generator = require('./src/Generators/SVG_Generator');
 
-let C_Parser = require('./src/Parsers/C_Parser');
+let CXX_Parser = require('./src/Parsers/CXX_Parser');
 let { LD_Parser, LD_Part, LD_Rung } = require('./src/Parsers/LD_Parser');
 
 let c_code = fs.readFileSync('examples/ex1/file1.c', 'utf8');
-var c_parser = new C_Parser(c_code);
+var c_parser = new CXX_Parser(c_code);
 c_parser.parse();
 
 var c_functions = c_parser.findFunctions();
@@ -17,7 +17,7 @@ var ld_parser = new LD_Parser(ld_code);
 ld_parser.parse();
 
 let svgGen = new SVG_Generator();
-svgGen.generate(ld_parser);
+//svgGen.generate(ld_parser);
 
 
 //console.log(JSON.stringify(ld_parser.rungs, null, 2));

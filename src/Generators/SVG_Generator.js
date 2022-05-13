@@ -45,11 +45,7 @@ class SVG_Generator {
           pos.h = Math.max(pos.h, ret.h);
         } else
           throw `Rung type ${i} not supported!`;
-
-
       }
-
-
     } else {
       let startPos = Object.assign({}, pos);
       let enterY = 0;
@@ -74,7 +70,6 @@ class SVG_Generator {
 
       this.svg.line(startPos.x, startPos.y + 25, pos.x, lastPos.y + 25).stroke({ color: 'black', width: 1 });
       this.svg.line(startPos.x + pos.w, startPos.y + 25, pos.x + pos.w, lastPos.y + 25).stroke({ color: 'black', width: 1 });
-
     }
 
     return pos;
@@ -82,14 +77,12 @@ class SVG_Generator {
 
   generate(ld_parser) {
     var pos = { x: 0, y: 0 };
+    
     for (var r of ld_parser.rungs) {
       pos.x = 0;
       let ret = this.drawRung(r, pos);
       pos.y += ret.h;
     }
-
-
-
 
     fs.writeFileSync('test.svg', this.svg.svg());
   }

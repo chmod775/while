@@ -1,4 +1,4 @@
-class C_Function {
+class CXX_Function {
   constructor() {
     this.name = null;
     this.retType = null;
@@ -34,11 +34,12 @@ class C_Function {
 }
 
 
-class C_Parser {
+class CXX_Parser {
   constructor(code) {
     this.code = code;
     this.codePtr = 0;
 
+    this.lineCounter = 0;
     this.token = null;
 
     this.tokens = [];
@@ -46,8 +47,103 @@ class C_Parser {
     this.functions = [];
 
     this.keywords = [
+      'alignas',
+      'alignof',
+      'and',
+      'and_eq',
+      'asm',
+      'atomic_cancel',
+      'atomic_commit',
+      'atomic_noexcept',
+      'auto',
+      'bitand',
+      'bitor',
+      'bool',
+      'break',
+      'case',
+      'catch',
+      'char',
+      'char8_t',
+      'char16_t',
+      'char32_t',
+      'class',
+      'compl',
+      'concept',
+      'const',
+      'consteval',
+      'constexpr',
+      'constinit',
+      'const_cast',
+      'continue',
+      'co_await',
+      'co_return',
+      'co_yield',
+      'decltype',
+      'default',
+      'delete',
+      'do',
+      'double',
+      'dynamic_cast',
+      'else',
+      'enum',
+      'explicit',
+      'export',
+      'extern',
+      'false',
+      'float',
+      'for',
+      'friend',
+      'goto',
+      'if',
+      'inline',
+      'int',
+      'long',
+      'mutable',
+      'namespace',
+      'new',
+      'noexcept',
+      'not',
+      'not_eq',
+      'nullptr',
+      'operator',
+      'or',
+      'or_eq',
+      'private',
+      'protected',
+      'public',
+      'reflexpr',
+      'register',
+      'reinterpret_cast',
+      'requires',
+      'return',
+      'short',
+      'signed',
+      'sizeof',
+      'static',
+      'static_assert',
+      'static_cast',
+      'struct',
+      'switch',
+      'synchronized',
+      'template',
+      'this',
+      'thread_local',
+      'throw',
+      'true',
+      'try',
       'typedef',
-      'struct'
+      'typeid',
+      'typename',
+      'union',
+      'unsigned',
+      'using',
+      'virtual',
+      'void',
+      'volatile',
+      'wchar_t',
+      'while',
+      'xor',
+      'xor_eq'
     ];
   }
   
@@ -56,17 +152,20 @@ class C_Parser {
   }
   
   getNextCh() {
-    return this.code[this.codePtr++];
+    let ch = this.code[this.codePtr++];
+    if (ch == '\n') this.lineCounter++;
+    return ch;
   }
   
   retToken(type, content) {
     this.token = { type: type, content: content };
+    console.log(this.lineCounter, this.token);
     return this.token;
   }
 
   expectToken(type) {
     let tok = this.getToken();
-    if (tok.type != type) throw `Token ${tok.type} not expected, expected ${type}!`;
+    if (tok.type != type) throw `LINE ${this.lineCounter}: Token ${tok.type} not expected, expected ${type}!`;
     return tok;
   }
 
@@ -91,15 +190,16 @@ class C_Parser {
   
         return this.retToken("SYMBOL", symbol);
       } else if (ch == '{') {
-        let group = '';
+        let group = [];
         let level = 0;
   
+        let t = null;
         do {
-          group += ch;
-          if (ch == '{') level++;
-          if (ch == '}') level--;
-          ch = this.getNextCh();
-        } while (level > 0);
+          t = this.getToken();
+          if (!t) break;
+          group.push(t);
+        } while (t.type != '}');
+
         return this.retToken("GROUP", group);
   
       } else if (ch == '(') {
@@ -107,15 +207,34 @@ class C_Parser {
   
         while (1) {
           let t = this.getToken();
-          if (t.type == ',') continue;
-          if (t.type == ')') break;
+
           
           args.push(this.parseArgument());
+
+          while (1) {
+            t = this.getToken();
+            if (t.type == ',') break;
+            if (t.type == ')') break;
+          }
+          if (t.type == ')') break;
         }
 
         return this.retToken("ARGUMENTS", args);
       } else if ((ch == '*') || (ch == ')') || (ch == ',')) {
         return this.retToken(ch);
+      } else if (ch == '#') {
+        let t = this.getToken();
+        let content = '';
+
+        var ignoreNewLine = false;
+        do {
+          ch = this.getNextCh();
+          if (ignoreNewLine && (ch == '\n')) { ch = ''; ignoreNewLine = false; }
+          if (ch == '\\') ignoreNewLine = true;
+          if (ch != '\n') content += ch;
+        } while (ch != '\n');
+
+        return this.retToken("PRECOMPILER", { type: t.content, content: content });
       } else if (ch == '\/') { // Comments
         if (nch == '\/') {
           do {
@@ -145,7 +264,7 @@ class C_Parser {
       tok = this.getToken();
     }
 
-    if (tok.type != "SYMBOL") throw `Token ${tok.type} not expected, expected SYMBOL!`;
+    if (tok.type != "SYMBOL") throw `LINE ${this.lineCounter}: Token ${tok.type} not expected, expected SYMBOL!`;
     arg.name = tok.content;
 
     return arg;
@@ -167,7 +286,7 @@ class C_Parser {
           (functionArguments_token.type == 'ARGUMENTS') &&
           (functionBlock_token.type == 'GROUP')
         ) {
-          let newFunction = new C_Function();
+          let newFunction = new CXX_Function();
 
           newFunction.name = functionName_token.content;
           newFunction.retType = functionRetType_token.content;
@@ -195,4 +314,4 @@ class C_Parser {
     return tokens;
   }
 }
-module.exports = C_Parser;
+module.exports = CXX_Parser;
