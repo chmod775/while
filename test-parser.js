@@ -34,25 +34,86 @@ const registry = new vsctm.Registry({
     }
 });
 
+function getTokenContent(source, token) {
+  return source.substring(token.startIndex, token.endIndex);
+}
+
+
+
+function parseTokens(source, tokens) {
+  let tokenIdx = 0;
+  let tok = null;
+
+  function is(scope) {
+    return tok.scopes.includes(scope);
+  }
+
+  function last(scope) {
+    return tok.scopes[tok.scopes.length - 1] == scope;
+  }
+
+  function match(scope) {
+    tok = tokens[tokenIdx++];
+    if (scope)
+      if (!is(scope))
+        throw `Scope ${scope} not found in token ${tok}`;
+    return tok;
+  }
+
+  function content() {
+    return source.substring(tok.startIndex, tok.endIndex);
+  }
+
+  do {
+    match();
+
+    if (is('entity.name.function.c')) {
+      const f_name = content();
+      const f_args = [];
+      
+      match('punctuation.section.parens.begin.c');
+
+      while (!is('punctuation.section.parens.end.c')) {
+        match();
+
+        if (last('meta.parens.c')) {
+          console.log(tok);
+          f_args.push(content());
+        }
+      }
+
+      console.log(`${f_name}(${f_args.join(',')}) : `);
+
+    }
+
+  } while (tokenIdx < (tokens.length - 1));
+
+}
+
+
 // Load the JavaScript grammar and any other grammars included by it async.
 registry.loadGrammar('source.cpp').then(grammar => {
-    const text = fs.readFileSync("Adafruit_SSD1306.cpp", "UTF8").split("\n");
-
+    const source = fs.readFileSync("test.c", "UTF8");
 
     let ruleStack = vsctm.INITIAL;
-    for (let i = 0; i < text.length; i++) {
-        const line = text[i];
-        const lineTokens = grammar.tokenizeLine(line, ruleStack);
-        //console.log(`\nTokenizing line: ${line}`);
-        for (let j = 0; j < lineTokens.tokens.length; j++) {
-            const token = lineTokens.tokens[j];
-            if (token.scopes.length > 1)
-              if (token.scopes.includes('entity.name.function.c'))
-                console.log(` - token from ${token.startIndex} to ${token.endIndex} ` +
-                  `(${line.substring(token.startIndex, token.endIndex)}) ` +
-                  `with scopes ${token.scopes.join(', ')}`
-                );
-        }
-        ruleStack = lineTokens.ruleStack;
+    const lineTokens = grammar.tokenizeLine(source, ruleStack);
+
+    parseTokens(source, lineTokens.tokens);
+    /*
+    for (var tIdx in lineTokens.tokens) {
+      const t = lineTokens.tokens[tIdx];
+
+      console.log(t.scopes);
+
+      if (t.scopes.includes('entity.name.function.c')) {
+        const f_name = getTokenContent(source, t);
+        const f_ret_type = getTokenContent(source, lineTokens.tokens[tIdx - 2]);
+      
+
+
+        console.log(`${f_name}() : ${f_ret_type}`);
+      }
+
     }
+*/
 });

@@ -20,10 +20,6 @@ bool RTRIG(bool en, s_RTRIG *inst) {
   return ret;
 }
 
-bool ADD_INT(int a, int b, int *c) {
-  *c = a + b;
-  return true;
-}
 
 typedef struct {
 	bool motor;
@@ -81,4 +77,13 @@ void main() {
   print(inst.motor);
 
   printf("cnt: %d\n", inst.cnt);
+}
+
+
+bool       
+ADD_INT(int a,
+int b,
+int *c) {
+  *c = a + b;
+  return true;
 }

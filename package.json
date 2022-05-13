@@ -1,0 +1,32 @@
+{
+  "name": "while",
+  "version": "1.0.0",
+  "description": "<br /> <div align=\"center\">   <img src=\"logo.png\" width=\"560\" /> </div> <div align=\"center\">   🚀️ LADDER compiler to C Code for easy and fast Microcontroller development 🚀️ </div> <br />",
+  "main": "main.js",
+  "directories": {
+    "example": "examples"
+  },
+  "dependencies": {
+    "electron": "^16.0.5",
+    "svgdom": "^0.1.10",
+    "tree-sitter": "^0.20.0",
+    "tree-sitter-cpp": "^0.20.0",
+    "tree-sitter-javascript": "^0.19.0",
+    "vscode-oniguruma": "^1.6.2",
+    "vscode-textmate": "^7.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chmod775/while.git"
+  },
+  "author": "Michele Trombetta",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/chmod775/while/issues"
+  },
+  "homepage": "https://github.com/chmod775/while#readme"
+}

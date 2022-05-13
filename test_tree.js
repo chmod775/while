@@ -8,8 +8,34 @@ const fs = require('fs');
 const parser = new Parser();
 parser.setLanguage(Grammar);
 
-const sourceCode = fs.readFileSync('./examples/ex1/Adafruit_SSD1306.h', 'utf8');
+const sourceCode = fs.readFileSync('./examples/ex1/Adafruit_SSD1306.cpp', 'utf8');
 const tree = parser.parse(sourceCode);
+
+const query = new Query(Grammar, `
+(function_declarator
+  declarator: (qualified_identifier
+    name: (identifier) @function)
+  parameters: (parameter_list) @params)
+`);
+
+const matches = query.matches(tree.rootNode);
+
+console.log(matches);
+
+const arg_node = matches[0].captures[1].node;
+
+const arg_query = new Query(Grammar,`
+(parameter_declaration) @arg
+(parameter_declaration type: (_) @t)
+`);
+const arg_matches = arg_query.matches(arg_node);
+console.log('args', arg_matches);
+
+console.log(arg_matches.map(n => getNodeContent(n.captures[0].node)));
+
+console.log(matches.map(n => getNodeContent(n.captures[1].node)));
+
+return;
 
 fs.writeFileSync('test_tree.json', JSON.stringify(tree.rootNode.child(1), null, 2));
 
@@ -223,11 +249,14 @@ function cursorWalk(cursor) {
 
 var w = tree.walk();
 let ret = cursorWalk(w, 0);
+
+
+
 /*
 var classes = findNodes(ret, 'class_specifier');
 
 console.log(classes[1].children.filter(t => t.field == 'name')[0].node.text);
 */
 console.log(ret);
-fs.writeFileSync('test_tree_pretty.json', JSON.stringify(ret, null, 2));
+//fs.writeFileSync('test_tree_pretty.json', JSON.stringify(ret, null, 2));
 //fs.writeFileSync('test_tree.json', JSON.stringify(mapNodes(tree.rootNode), null, 2));
