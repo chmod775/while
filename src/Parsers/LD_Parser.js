@@ -19,6 +19,13 @@ class LD_PartArgument {
   }
 }
 
+const TOKEN_TYPE = {
+	SYMBOL: "SYMBOL",
+	SECTION: "SECTION",
+	LITERAL: "LITERAL",
+	NEWLINE: "NEWLINE"
+};
+
 class LD_Parser {
   constructor(code) {
     this.code = code;
@@ -46,7 +53,7 @@ class LD_Parser {
   }
 
   retToken(type, content) {
-    this.token = { type: type, content: content };
+    this.token = { type: type, content: content, startPtr: this.codePtr - (content ? content.length : type.length) };
     return this.token;
   }
 
@@ -55,7 +62,7 @@ class LD_Parser {
   
     while (ch = this.getNextCh()) {
       let nch = this.getCh();
-  
+
       if (ch == '#') {
         let section = '';
 
@@ -66,7 +73,7 @@ class LD_Parser {
   
         this.codePtr--;
 
-        return this.retToken("SECTION", section);
+        return this.retToken(TOKEN_TYPE.SECTION, section);
       } else if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch == '_')) {
         let symbol = '';
   
@@ -77,7 +84,7 @@ class LD_Parser {
   
         this.codePtr--;
   
-        return this.retToken("SYMBOL", symbol);
+        return this.retToken(TOKEN_TYPE.SYMBOL, symbol);
       } else if (ch >= '0' && ch <= '9') {
         let number = '';
   
@@ -88,7 +95,7 @@ class LD_Parser {
   
         this.codePtr--;
   
-        return this.retToken("LITERAL", number);
+        return this.retToken(TOKEN_TYPE.LITERAL, number);
 
       } else if (ch == '\/') { // Comment
         if (nch == '\/') {
@@ -102,11 +109,13 @@ class LD_Parser {
           } while ((ch != '*') || (nch != '\/')); 
         }
       } else if (ch == '\n') {
-        return this.retToken('NEWLINE');
+        return this.retToken(TOKEN_TYPE.NEWLINE);
       } else if ((ch == '-') || (ch == ',') || (ch == '(') || (ch == ')') || (ch == '[') || (ch == ']') || (ch == ':')) {
         return this.retToken(ch);
       }
     }
+
+		this.token = null;
   }
 
   expectToken(type) {
@@ -114,6 +123,23 @@ class LD_Parser {
     if (tok.type != type) throw `Token ${tok.type} not expected, expected ${type}!`;
     return tok;
   }
+
+	match(type) {
+		if (Array.isArray(type)) {
+			let invalid = true;
+			for (let t of type)
+				if (this.token.type == t) invalid = false;
+    	if (invalid) throw `Token ${this.token.type} not expected, expected any of [${type.join(', ')}]!`;
+		} else
+    	if (this.token.type != type) throw `Token ${this.token.type} not expected, expected ${type}!`;
+    return this.token;
+	}
+
+	next(type) {
+		this.getToken();
+		if (type) this.match(type);
+		return this.token;
+	}
 
   findInterfaceSymbol(name, suppressError) {
     let ret = {
@@ -144,11 +170,11 @@ class LD_Parser {
 
     while (tok = this.getToken()) {
       if (tok.type == ']') break;
-      if ((tok.type != 'SYMBOL') && (tok.type != 'LITERAL')) throw `Expected SYMBOL or LITERAL as argument, found ${tok.type}`;
+      if ((tok.type != TOKEN_TYPE.SYMBOL) && (tok.type != TOKEN_TYPE.LITERAL)) throw `Expected SYMBOL or LITERAL as argument, found ${tok.type}`;
 
-      if (tok.type == 'LITERAL') {
-        part.arguments.push(new LD_PartArgument('LITERAL', tok.content));
-      } else if (tok.type == 'SYMBOL') {
+      if (tok.type == TOKEN_TYPE.LITERAL) {
+        part.arguments.push(new LD_PartArgument(TOKEN_TYPE.LITERAL, tok.content));
+      } else if (tok.type == TOKEN_TYPE.SYMBOL) {
         let foundSymbol = this.findInterfaceSymbol(tok.content);
         part.arguments.push(new LD_PartArgument(foundSymbol.section, foundSymbol.item.name));
       }
@@ -166,13 +192,31 @@ class LD_Parser {
   }
 
   parseInterface() {
+		this.match(TOKEN_TYPE.SYMBOL);
+
     let item = {
       name: this.token.content,
-      dataType: null
+      dataType: null,
+			args: []
     };
 
-    let tok = this.expectToken(':');
-    item.dataType = this.expectToken('SYMBOL').content;
+		this.next(':');
+    item.dataType = this.next(TOKEN_TYPE.SYMBOL).content;
+
+		this.next();
+		if (this.token.type == '(') {
+			this.next();
+			while (this.token.type != ')') {
+				this.match([ TOKEN_TYPE.SYMBOL, TOKEN_TYPE.LITERAL ]);
+				item.args.push(this.token.content);
+
+				this.next();
+				if (this.token.type == ',')
+					this.next();
+			}
+
+			this.next();
+		}
 
     return item;
   }
@@ -180,7 +224,7 @@ class LD_Parser {
   parseRung(rung) {
     var tok = this.token;
     do {
-      if (tok.type == 'SYMBOL') {
+      if (tok.type == TOKEN_TYPE.SYMBOL) {
         let symbol = this.parsePart(tok);
         rung.items.push(symbol);
       } else if (tok.type == '(') {
@@ -200,7 +244,7 @@ class LD_Parser {
         return tok;
       } else if (tok.type == '-') {
 
-      } else if (tok.type == 'NEWLINE') {
+      } else if (tok.type == TOKEN_TYPE.NEWLINE) {
         return;
       } else
         throw `Token ${tok.type} not expected!`;
@@ -209,15 +253,22 @@ class LD_Parser {
 
   parse() {
     var activeSection = null;
+
+		this.next(TOKEN_TYPE.SECTION);
+
     do {
-      var tok = this.getToken();
+      var tok = this.token;
       if (!tok) break;
 
-      if (tok.type == "SECTION") {
+      if (tok.type == TOKEN_TYPE.SECTION) {
         activeSection = tok.content.toUpperCase();
-      } else if (tok.type == "NEWLINE") {
+				this.next();
+      } else if (tok.type == TOKEN_TYPE.NEWLINE) {
+				this.next();
       } else {
-        switch (activeSection) {
+				console.log(activeSection);
+
+				switch (activeSection) {
           case '#INPUTS':
             this.interface.inputs.push(this.parseInterface());
             break;
@@ -236,11 +287,16 @@ class LD_Parser {
           case '#CONST':
             this.interface.constants.push(this.parseInterface());
             break;
+					
           case '#RUNGS':
+						/*
             let newRung = new LD_Rung('series');
             this.parseRung(newRung);
             this.rungs.push(newRung);
+						*/
             break;
+					default:
+						throw `Section ${activeSection} not implemented!`
         }
       }
     } while (tok);
