@@ -1,5 +1,12 @@
 const { CompilerObject } = require("../Compiler");
 
+class CPP_File {
+  constructor(filename, content) {
+    this.filename = filename;
+    this.content = content;
+  }
+}
+
 class CPP_Generator {
   constructor(compiler) {
     this.compiler = compiler;
@@ -28,7 +35,7 @@ class CPP_Generator {
     // END
     lines.push(`}`);
 
-    return lines.join('\n');
+    return new CPP_File(`${o.name}.cpp`, lines.join('\n'));
   }
 
   generate() {
